@@ -20,6 +20,7 @@ services:
     depends_on:
       - db
       - redis
+      - ldap-auth
     environment:
       - OWNCLOUD_DOMAIN=${OWNCLOUD_DOMAIN}
       - OWNCLOUD_DB_TYPE=mysql
@@ -49,6 +50,7 @@ services:
     depends_on:
       - db
       - redis
+      - ldap-auth
     environment:
       - OWNCLOUD_DOMAIN=${OWNCLOUD_DOMAIN}
       - OWNCLOUD_DB_TYPE=mysql
@@ -78,6 +80,7 @@ services:
     depends_on:
       - db
       - redis
+      - ldap-auth
     environment:
       - OWNCLOUD_DOMAIN=${OWNCLOUD_DOMAIN}
       - OWNCLOUD_DB_TYPE=mysql
@@ -126,6 +129,13 @@ services:
     restart: always
     ports:
       - 80:80
+
+  ldap-auth:
+    image: larrycai/openldap
+    container_name: ldap
+    ports:
+      - 389:389
+    restart: always
 
   redis:
     image: webhippie/redis:latest

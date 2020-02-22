@@ -1,0 +1,16 @@
+dn: cn=lidia,ou=Users,dc=openstack,dc=org
+objectClass: top
+objectClass: account
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: lidia
+uid: lidia
+uidNumber: 16859
+gidNumber: 100
+homeDirectory: /home/lidia
+loginShell: /bin/bash
+gecos: mparra
+userPassword: {crypt}x
+shadowLastChange: 0
+shadowMax: 0
+shadowWarning: 0
