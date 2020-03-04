@@ -7,8 +7,6 @@ volumes:
     driver: local
   backup:
     driver: local
-  redis:
-    driver: local
 
 services:
   owncloud:
@@ -18,7 +16,6 @@ services:
       - 8080
     depends_on:
       - db
-      - redis
       - ldap-auth
     environment:
       - OWNCLOUD_DOMAIN=${OWNCLOUD_DOMAIN}
@@ -30,8 +27,6 @@ services:
       - OWNCLOUD_ADMIN_USERNAME=${ADMIN_USERNAME}
       - OWNCLOUD_ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - OWNCLOUD_MYSQL_UTF8MB4=true
-      - OWNCLOUD_REDIS_ENABLED=true
-      - OWNCLOUD_REDIS_HOST=redis
     healthcheck:
       test: ["CMD", "/usr/bin/healthcheck"]
       interval: 30s
@@ -75,17 +70,3 @@ services:
     ports:
       - 389:389
     restart: always
-
-  redis:
-    image: webhippie/redis:latest
-    container_name: redis
-    restart: always
-    environment:
-      - REDIS_DATABASES=1
-    healthcheck:
-      test: ["CMD", "/usr/bin/healthcheck"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    volumes:
-      - redis:/var/lib/redis
