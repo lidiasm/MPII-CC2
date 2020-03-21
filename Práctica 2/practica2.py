@@ -28,23 +28,31 @@ dag = DAG(
 PrepararEntorno = BashOperator(
                     task_id='preparar_entorno',
                     depends_on_past=False,
-                    bash_command='mkdir /tmp/workflow/',
+                    bash_command='mkdir -p /tmp/workflow/', # Con la opción "-p" intentará crear el directorio si no existe. Si existe no lanza error.
                     dag=dag
                     )
 # CapturaDatosHumedad: se encarga de descargar el fichero de datos que contiene la humedad.
 CapturaDatosHumedad = BashOperator(
                         task_id='captura_datos_hum',
                         depends_on_past=False,
-                        bash_command='wget --output-document /tmp/workflow/humidity.csv.zip https://github.com/manuparra/MaterialCC2020/blob/master/humidity.csv.zip',
+                        bash_command='wget --output-document /tmp/workflow/humidity.csv.zip https://raw.githubusercontent.com/manuparra/MaterialCC2020/master/humidity.csv.zip',
                         dag=dag
                         )
 # CapturaDatosTemperatura: tarea encargada de descargar el otro fichero de datos con las temperaturas.
 CapturaDatosTemperatura = BashOperator(
                             task_id='captura_datos_temp',
                             depends_on_past=False,
-                            bash_command='wget --output-document /tmp/workflow/temperature.csv.zip https://github.com/manuparra/MaterialCC2020/blob/master/temperature.csv.zip',
+                            bash_command='wget --output-document /tmp/workflow/temperature.csv.zip https://raw.githubusercontent.com/manuparra/MaterialCC2020/master/temperature.csv.zip',
                             dag=dag
                             )
+# DescomprimirDatos: tarea encargada de descomprimir ambos ficheros.
+# Con la opción "-d" especificamos la ruta donde queremos que descomprima los ficheros
+DescomprimirDatos = BashOperator(
+                        task_id='descomprimir_datos',
+                        depends_on_past=False,
+                        bash_command='unzip /tmp/workflow/temperature.csv.zip -d /tmp/workflow ; unzip /tmp/workflow/humidity.csv.zip -d /tmp/workflow',
+                        dag=dag
+                        )
 
 ## ORDEN DE EJECUCIÓN DE TAREAS
-PrepararEntorno >> [CapturaDatosHumedad, CapturaDatosTemperatura]
+PrepararEntorno >> [CapturaDatosHumedad, CapturaDatosTemperatura] >> DescomprimirDatos
