@@ -3,8 +3,9 @@ from airflow import DAG
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
-import requests
+#import requests
 import pandas
+import pymongo
 
 default_args = {
     'owner': 'airflow',
@@ -29,11 +30,19 @@ def get_datos():
     # Obtenemos la columna de las fechas porque es la misma en ambos datasets
     datetime = df_humedad['datetime']
     # Formamos el nuevo dataframe unificado
-    d = {'DATE':df_humedad['datetime'], 'TEMP':temperatura_sf, 'HUM':humedad_sf}
+    d = {'DATE':datetime, 'TEMP':temperatura_sf, 'HUM':humedad_sf}
     dataframe = pandas.DataFrame(data=d)
+    # Conectamos con la base de datos
+    cliente = pymongo.MongoClient('mongodb://localhost:27017')
+    coleccion = cliente['PrediccionesBD']['Datos']
+    # Insertamos los datos
+    df_dict = dataframe.to_dict("records")
+    indice = coleccion.insert_one({'index':'SF', 'datos':df_dict}).inserted_id
+    print("Indice mongodb ", str(indice))
+
     # Escribimos el nuevo dataframe en un fichero csv
     ## Con index=False le decimos que no escriba el número de las filas
-    dataframe.to_csv('/tmp/workflow/dataframe.csv', index=False)
+    #dataframe.to_csv('/tmp/workflow/dataframe.csv', index=False)
 
 ############################ FUNCIONES DE PYTHON ############################
 
@@ -45,11 +54,12 @@ dag = DAG(
     schedule_interval=timedelta(days=1),
 )
 # PrepararEntorno es una tarea encargada de crear el direcotorio donde almacenar
-# los ficheros de datos que se descargarán a continuación.
+# los ficheros de datos que se descargarán a continuación y lanzar el contenedor de la base de datos.
+# Con la opción "-p" intentará crear el directorio si no existe. Si existe no lanza error.
 PrepararEntorno = BashOperator(
                     task_id='preparar_entorno',
                     depends_on_past=False,
-                    bash_command='mkdir -p /tmp/workflow/', # Con la opción "-p" intentará crear el directorio si no existe. Si existe no lanza error.
+                    bash_command='mkdir -p /tmp/workflow/ ; docker pull mongo:latest ; docker run -d mongo:latest',
                     dag=dag
                     )
 # CapturaDatosHumedad: se encarga de descargar el fichero de datos que contiene la humedad.
@@ -75,13 +85,14 @@ DescomprimirDatos = BashOperator(
                         bash_command='unzip -o /tmp/workflow/temperature.csv.zip -d /tmp/workflow ; unzip -o /tmp/workflow/humidity.csv.zip -d /tmp/workflow',
                         dag=dag
                         )
-# UnificarDatos: tarea encargada de extraer la humedad y temperatura de San Francisco así como la hora a la que se ha medido.
-UnificarDatos = PythonOperator(
-                    task_id='unificar_datos',
+# AlmacenarDatos: tarea encargada de extraer la humedad y temperatura de
+# San Francisco así como la hora a la que se ha medido para almacenarla en al base de datos.
+AlmacenarDatos = PythonOperator(
+                    task_id='almacenar_datos',
                     python_callable=get_datos,
                     op_kwargs={},
                     dag=dag
                     )
 
 ## ORDEN DE EJECUCIÓN DE TAREAS
-PrepararEntorno >> [CapturaDatosHumedad, CapturaDatosTemperatura] >> DescomprimirDatos >> UnificarDatos
+PrepararEntorno >> [CapturaDatosHumedad, CapturaDatosTemperatura] >> DescomprimirDatos >> AlmacenarDatos
