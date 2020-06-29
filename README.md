@@ -43,6 +43,7 @@ El objetivo reside en resolver un problema de clasificación aplicado a un conju
 
 Para el desarrollo de práctica se usará el cluster hadoop.ugr.es, que provee de HDFS y Spark ya preparado y listo para trabajar sobre él, y que proporciona todas las herramientas para el procesamiento. 
 
+El código de la práctica completa se puede encontrar [aquí](https://github.com/lidiasm/CC2-Spark).
 
 ### Teoría
 
